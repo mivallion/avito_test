@@ -1,9 +1,10 @@
 import datetime
 import requests
 import asyncscheduler
+import itertools
 
 from typing import Optional
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from pymongo import MongoClient
 from bson.objectid import ObjectId
@@ -33,7 +34,7 @@ class Query(BaseModel):
         locationId (int): Location (city, village etc.) id. None is equal everywhere
     """
     text: str
-    locationId: Optional[int] = None
+    locationId: Optional[str] = None
 
 
 def __get_query_count(query: str, location_id: str) -> str or None:
@@ -68,6 +69,30 @@ def __update_queries():
         query_col.update_one(db_filter, db_update)
 
 
+def __update_top_ads(query: str, location_id: str) -> str or None:
+    r = requests.get(
+        f"https://www.avito.ru/api/10/items?locationId={location_id}&query={query}&key={avito_app_key}"
+    ).json()
+    if "error" in r:
+        return None
+    if r["status"] == "ok":
+        items = r["result"]["items"]
+        items_views = {}
+        for item in items:
+            if item["type"] != "item":
+                continue
+            item_id = item["value"]["id"]
+            item_info = requests.get(
+                f"https://www.avito.ru/api/16/items/{item_id}?key={avito_app_key}"
+            ).json()
+            views = item_info["stats"]["views"]["total"]
+            items_views[item_id] = views
+
+        sorted_dict = dict(sorted(items_views.items(), key=lambda x: x[1]))
+        print(dict(itertools.islice(sorted_dict.items(), 5)))
+
+
+
 a = asyncscheduler.AsyncScheduler()
 a.start()
 a.repeat(3600, 1, __update_queries)  # TODO: how to stop it with ctrl+c?
@@ -80,10 +105,10 @@ async def add_query(query: Query):
         "locationId": query.locationId,
     })
     if q is not None:
-        return {}  # TODO: return HTTP error: already exist
+        raise HTTPException(status_code=422, detail="Item already added")
     query_count = __get_query_count(query.text, query.locationId)
     if query_count is None:
-        return {}  # TODO: return HTTP error: bad args
+        raise HTTPException(status_code=422, detail="Bad params")
     timestamp = int(datetime.datetime.now().timestamp())
     query_entry = {
         "query": query.text,
@@ -102,12 +127,18 @@ async def get_stat(query_id: str, timestamp_l: str, timestamp_r: str):
         timestamp_l, timestamp_r = timestamp_r, timestamp_l
     query = query_col.find_one({"_id": ObjectId(query_id)})
     if query is None:
-        return {}  # TODO: return HTTP error: entry not exist
+        raise HTTPException(status_code=404, detail="Item not found")
     res = {}
     for t, c in query["counts"].items():
         if timestamp_l <= t <= timestamp_r:
             res[t] = c
     return res
+
+
+@app.get("/top")
+async def add_query(query: Query):
+    __update_top_ads(query.text, query.locationId)
+    return {}
 
 
 @app.get("/stop")
