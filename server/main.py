@@ -1,6 +1,5 @@
 import datetime
 import requests
-import asyncscheduler
 import itertools
 
 from typing import Optional
@@ -19,7 +18,7 @@ query_col = db['query_col']
 avito_app_key = "ZaeC8aidairahqu2Eeb1quee9einaeFieboocohX"
 
 # TODO: tests coverage 70+%
-# TODO: python app to docker
+# TODO: python server to docker
 
 
 class Query(BaseModel):
@@ -107,11 +106,6 @@ def __get_top_ads(query: str, location_id: str, count: int) -> {str: str} or Non
 
         sorted_dict = dict(sorted(items_views.items(), reverse=True, key=lambda x: int(x[1])))
         return dict(itertools.islice(sorted_dict.items(), count))
-
-
-a = asyncscheduler.AsyncScheduler()
-a.start()
-a.repeat(3600, 1, __update_queries)  # TODO: how to stop it with ctrl+c?
 
 
 @app.put("/add")
@@ -207,9 +201,3 @@ async def update_top_query(query_id: str):
     query_col.update_one(db_filter, db_update)
 
     return top_ads
-
-
-@app.get("/stop")
-async def stop_updates():
-    a.stop()
-    return {}

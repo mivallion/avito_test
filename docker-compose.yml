@@ -14,3 +14,17 @@ services:
             - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
         ports: 
             - '27017-27019:27017-27019'
+
+    server:
+        build:
+            context: server
+            dockerfile: Dockerfile
+        container_name: 'server-container'
+        ports:
+            - '8000:8000'
+
+    updater:
+        build:
+            context: updater
+            dockerfile: Dockerfile
+        container_name: 'updater-container'
