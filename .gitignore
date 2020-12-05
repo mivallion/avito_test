@@ -1,3 +1,6 @@
 .vscode/*
 mongo-volume/*
 app/__pycache__/*
+venv/*
+.directory
+.idea/*
