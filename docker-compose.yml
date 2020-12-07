@@ -22,9 +22,18 @@ services:
         container_name: 'server-container'
         ports:
             - '8000:8000'
+        links:
+            -   database
+        depends_on:
+            -   database
 
     updater:
         build:
             context: updater
             dockerfile: Dockerfile
         container_name: 'updater-container'
+        links:
+            -   database
+        depends_on:
+            -   database
+            -   server
