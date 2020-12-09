@@ -2,9 +2,9 @@ import requests
 import datetime
 import itertools
 
-from pymongo import MongoClient
+import pymongo
 
-client = MongoClient('mongodb://root:1234@database:27017/')
+client = pymongo.MongoClient('mongodb://root:1234@database:27017/')
 db = client['stat_database']
 query_col = db['query_col']
 
@@ -48,7 +48,10 @@ def update_queries():
     """
     Update queries - add new entry {timestamp: count-of-ads} in database
     """
-    queries = query_col.find()
+    try:
+        queries = query_col.find()
+    except pymongo.errors.ServerSelectionTimeoutError:
+        return None
     for query in queries:
         t = timestamp()
         query["counts"][t] = get_query_count(query["query"], query["locationId"])
@@ -73,9 +76,14 @@ def get_top_ads(query: str, location_id: str, count: int) -> {str: str} or None:
     :param count: Count of top ads
     :return: Dictionary {ad_id: views_count}
     """
-    r = requests.get(
-        f"https://www.avito.ru/api/10/items?locationId={location_id}&query={query}&key={avito_app_key}"
-    ).json()
+    if location_id is None:
+        r = requests.get(
+            f"https://www.avito.ru/api/10/items?query={query}&key={avito_app_key}"
+        ).json()
+    else:
+        r = requests.get(
+            f"https://www.avito.ru/api/10/items?locationId={location_id}&query={query}&key={avito_app_key}"
+        ).json()
     if "error" in r:
         return None
     if r["status"] == "ok":
@@ -99,7 +107,10 @@ def update_top_ads():
     """
     Update top 5 ads for every query in database
     """
-    queries = query_col.find()
+    try:
+        queries = query_col.find()
+    except pymongo.errors.ServerSelectionTimeoutError:
+        return None
     for query in queries:
         top_ads = get_top_ads(query['query'], query['locationId'], 5)
         db_filter = {

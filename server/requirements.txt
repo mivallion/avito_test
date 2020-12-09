@@ -1,5 +1,0 @@
-pymongo
-fastapi
-uvicorn
-asyncscheduler
-requests

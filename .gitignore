@@ -1,6 +1,11 @@
-.vscode/*
-mongo-volume/*
-server/__pycache__/*
-venv/*
+.vscode
+mongo-volume
+server/__pycache__
+venv
 .directory
-.idea/*
+.idea
+env
+.coverage
+htmlcov
+.pytest_cache
+__pycache__
