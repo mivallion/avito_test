@@ -1,8 +1,6 @@
 import pymongo
-import requests
 import unittest
 from unittest import mock
-
 import common
 
 
@@ -145,7 +143,7 @@ class TestClass(unittest.TestCase):
 
     @mock.patch('requests.get', side_effect=mocked_requests_get)
     def test_get_top_ads(self, mock_get):
-        data = common.get_top_ads("GetTopAds", 637640, 5)
+        data = common.get_top_ads("GetTopAds", "637640", 5)
         self.assertEqual(data, {"2026965892": "124"})
 
     @mock.patch('requests.get', side_effect=mocked_requests_get)
@@ -161,7 +159,3 @@ class TestClass(unittest.TestCase):
     def test_update_mongo_no_connection(self, mock_get, mock_find, mock_update_one):
         common.update_queries()
         common.update_top_ads()
-
-
-if __name__ == '__main__':
-    unittest.main()
