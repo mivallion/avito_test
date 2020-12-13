@@ -7,9 +7,6 @@ from common import *
 
 app = FastAPI()
 
-# TODO: tests coverage 70+%
-# TODO: python server to docker
-
 
 class Query(BaseModel):
     """
